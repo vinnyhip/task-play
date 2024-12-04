@@ -1,10 +1,8 @@
 package com.course.taskplay.ui.components
 
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun TaskItem() {
+fun TaskItem(
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(16.dp)
@@ -25,15 +27,14 @@ fun TaskItem() {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(8.dp)
         ) {
             Checkbox(
-                checked = true,
-                onCheckedChange = null
+                checked = checked,
+                onCheckedChange = onCheckedChange
             )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Task 1",
+                text = text,
                 style = MaterialTheme.typography.bodyLarge
             )
         }

@@ -26,12 +26,16 @@ fun TaskListScreen() {
         Column(modifier = Modifier.padding(innerPadding)) {
             LazyColumn(modifier = Modifier.padding(16.dp).weight(1f)) {
                 items(20) {
-                    TaskItem()
+                    TaskItem(text = "Task 1", checked = false) {
+                        // Handle task item click
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
-            AddTaskButton(modifier = Modifier.align(Alignment.CenterHorizontally))
+            AddTaskButton(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                // Handle add task button click
+            }
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
