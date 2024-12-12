@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.Scaffold
@@ -22,6 +23,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -34,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import com.course.taskplay.ui.components.AddTaskButton
 import com.course.taskplay.ui.components.TaskItem
 import com.course.taskplay.ui.components.TaskPlayTopAppBar
+import com.course.taskplay.ui.model.Task
+import com.course.taskplay.ui.model.TaskListScreenUIState
 import com.course.taskplay.ui.theme.TaskPlayTheme
 
 @Composable
@@ -44,11 +48,7 @@ fun TaskListScreen() {
         }
     ) { innerPadding ->
 
-        var addTaskState by remember { mutableStateOf(false) }
-        var taskText by remember { mutableStateOf("") }
-        val taskStates =
-            remember { mutableStateListOf<Boolean>().apply { repeat(20) { add(false) } } }
-        val tasksNames = remember { mutableStateListOf<String>() }
+        var uiState by remember { mutableStateOf(TaskListScreenUIState()) }
 
         Column(modifier = Modifier.padding(innerPadding)) {
             LazyColumn(
@@ -56,12 +56,12 @@ fun TaskListScreen() {
                     .padding(16.dp)
                     .weight(1f)
             ) {
-                items(tasksNames.size) {
+                items(uiState.tasks) { task ->
                     TaskItem(
-                        text = tasksNames[it],
-                        checked = taskStates[it],
+                        text = task.name,
+                        checked = task.isChecked,
                     ) { checked ->
-                        taskStates[it] = checked
+                        uiState = onChangeTaskStatus(uiState, task, checked)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -69,7 +69,7 @@ fun TaskListScreen() {
 
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 val transition =
-                    updateTransition(targetState = addTaskState, label = "AddTaskTransition")
+                    updateTransition(targetState = uiState.addTaskState, label = "AddTaskTransition")
 
                 val textFieldAlpha by transition.animateFloat(label = "TextFieldAlpha") { state ->
                     if (state) 1f else 0f
@@ -79,29 +79,25 @@ fun TaskListScreen() {
                     if (state) 0f else 1f
                 }
 
-                BackHandler(enabled = addTaskState) {
-                    addTaskState = false
+                BackHandler(enabled = uiState.addTaskState) {
+                    uiState = onBack(uiState)
                 }
 
-                if (addTaskState) {
+                if (uiState.addTaskState) {
                     val focusRequester = remember { FocusRequester() }
                     var isFocused by remember { mutableStateOf(false) }
 
                     TextField(
-                        value = taskText,
+                        value = uiState.task?.name.orEmpty(),
                         onValueChange = {
                             if (it.length <= 20)
-                                taskText = it
+                                uiState = uiState.copy(task = Task(name = it, isChecked = false))
                         },
                         label = { Text("Add Task") },
                         singleLine = true,
                         keyboardActions = KeyboardActions(
                             onDone = {
-                                if (taskText.isNotBlank()) {
-                                    tasksNames.add(taskText)
-                                    taskText = ""
-                                }
-                                addTaskState = false
+                                uiState = onDone(uiState)
                             }
                         ),
                         shape = RoundedCornerShape(16.dp),
@@ -116,7 +112,8 @@ fun TaskListScreen() {
                             .focusRequester(focusRequester)
                             .onFocusChanged { focusState ->
                                 isFocused = focusState.isFocused
-                            }.alpha(textFieldAlpha)
+                            }
+                            .alpha(textFieldAlpha)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -128,7 +125,7 @@ fun TaskListScreen() {
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .alpha(buttonAlpha)
-                    ) { addTaskState = true }
+                    ) { uiState = onClickAddTask(uiState) }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
