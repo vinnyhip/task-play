@@ -18,12 +18,11 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -33,22 +32,24 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.course.taskplay.ui.components.AddTaskButton
 import com.course.taskplay.ui.components.TaskItem
 import com.course.taskplay.ui.components.TaskPlayTopAppBar
-import com.course.taskplay.ui.model.Task
-import com.course.taskplay.ui.model.TaskListScreenUIState
+import com.course.taskplay.ui.components.TaskTextField
 import com.course.taskplay.ui.theme.TaskPlayTheme
+import com.course.taskplay.ui.viewmodel.TaskListViewModel
 
 @Composable
-fun TaskListScreen() {
+fun TaskListScreen(viewModel: TaskListViewModel = viewModel()) {
+
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         topBar = {
             TaskPlayTopAppBar()
         }
     ) { innerPadding ->
-
-        var uiState by remember { mutableStateOf(TaskListScreenUIState()) }
 
         Column(modifier = Modifier.padding(innerPadding)) {
             LazyColumn(
@@ -60,9 +61,9 @@ fun TaskListScreen() {
                     TaskItem(
                         text = task.name,
                         checked = task.isChecked,
-                    ) { checked ->
-                        uiState = onChangeTaskStatus(uiState, task, checked)
-                    }
+                        onCheckedChange = { checked -> viewModel.onChangeTaskStatus(task, checked) },
+                        onClick = { viewModel.removeTask(task) }
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
@@ -79,53 +80,27 @@ fun TaskListScreen() {
                     if (state) 0f else 1f
                 }
 
-                BackHandler(enabled = uiState.addTaskState) {
-                    uiState = onBack(uiState)
-                }
+                BackHandler(enabled = uiState.addTaskState) { viewModel.onBack() }
 
                 if (uiState.addTaskState) {
-                    val focusRequester = remember { FocusRequester() }
-                    var isFocused by remember { mutableStateOf(false) }
-
-                    TextField(
+                    TaskTextField(
                         value = uiState.task?.name.orEmpty(),
-                        onValueChange = {
-                            if (it.length <= 20)
-                                uiState = uiState.copy(task = Task(name = it, isChecked = false))
-                        },
-                        label = { Text("Add Task") },
-                        singleLine = true,
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                uiState = onDone(uiState)
-                            }
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = TextFieldDefaults.colors().copy(
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent,
-                            errorIndicatorColor = Color.Transparent
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester)
-                            .onFocusChanged { focusState ->
-                                isFocused = focusState.isFocused
-                            }
-                            .alpha(textFieldAlpha)
+                        onValueChange = { viewModel.onValueChange(it) },
+                        onDone = { viewModel.onDone() },
+                        focusRequester = uiState.focusRequester,
+                        isFocused = viewModel::onFocusChange,
+                        textFieldAlpha = textFieldAlpha
                     )
+
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    LaunchedEffect(Unit) {
-                        focusRequester.requestFocus()
-                    }
+                    LaunchedEffect(Unit) { viewModel.requestFocus() }
                 } else {
                     AddTaskButton(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .alpha(buttonAlpha)
-                    ) { uiState = onClickAddTask(uiState) }
+                    ) { viewModel.onClickAddTask() }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }

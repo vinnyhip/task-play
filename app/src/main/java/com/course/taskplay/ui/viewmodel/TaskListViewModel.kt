@@ -50,4 +50,25 @@ class TaskListViewModel : ViewModel() {
             )
         }
     }
+
+    fun onValueChange(name: String) {
+        if (name.length <= 20)
+            _uiState.update { it.copy(task = Task(name = name, isChecked = false)) }
+    }
+
+    fun onFocusChange(isFocused: Boolean) {
+        _uiState.update { it.copy(isFocused = isFocused) }
+    }
+
+    fun requestFocus() {
+        _uiState.value.focusRequester.requestFocus()
+    }
+
+    fun removeTask(task: Task) {
+        _uiState.update { state ->
+            state.copy(
+                tasks = state.tasks.filter { it != task }
+            )
+        }
+    }
 }
